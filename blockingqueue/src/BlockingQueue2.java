@@ -2,6 +2,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,7 +10,7 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
     private final E[] array;
     private int head;
     private int tail;
-    private int size;
+    private AtomicInteger size;//原子整数类
     private ReentrantLock tailLock = new ReentrantLock();
     private Condition tailWaits = tailLock.newCondition();
     private ReentrantLock headLock = new ReentrantLock();
@@ -34,7 +35,7 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
             if(++tail == array.length){
                 tail = 0;
             }
-            size++;
+            size.getAndIncrement();
             //通知,告诉他们可以用了 headWaits.signal();
         }finally {
             tailLock.unlock();
@@ -63,7 +64,7 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
             if(++tail == array.length){
                 tail = 0;
             }
-            size++;
+            size.getAndIncrement();
             //通知，你们不用再等了，ok了
             headWaits.signal();
             return true;
@@ -87,7 +88,7 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
                 head = 0;
             }
             //3. 修改size
-            size--;
+            size.getAndDecrement();
             tailWaits.signal();
             return e;
         }finally {
@@ -95,9 +96,9 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
         }
     }
     public boolean isFull(){
-        return size == array.length;
+        return size.get() == array.length;
     }
     public boolean isEmpty(){
-        return head == tail;
+        return size.get()==0;
     }
 }
