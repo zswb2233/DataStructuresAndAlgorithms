@@ -6,6 +6,8 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/DataStructuresAndAlgorithms.iml" filepath="$PROJECT_DIR$/.idea/DataStructuresAndAlgorithms.iml" />
       <module fileurl="file://$PROJECT_DIR$/LinkedList/LinkedList.iml" filepath="$PROJECT_DIR$/LinkedList/LinkedList.iml" />
       <module fileurl="file://$PROJECT_DIR$/algorithms/algorithms.iml" filepath="$PROJECT_DIR$/algorithms/algorithms.iml" />
+      <module fileurl="file://$PROJECT_DIR$/blockingqueue/blockingqueue.iml" filepath="$PROJECT_DIR$/blockingqueue/blockingqueue.iml" />
+      <module fileurl="file://$PROJECT_DIR$/queue/queue.iml" filepath="$PROJECT_DIR$/queue/queue.iml" />
     </modules>
   </component>
 </project>
