@@ -24,6 +24,7 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
 
     @Override
     public void offer(E e) throws InterruptedException {
+        int c;//添加前元素个数
         tailLock.lockInterruptibly();
         try{
             //1.队列满则等待
@@ -35,11 +36,28 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
             if(++tail == array.length){
                 tail = 0;
             }
-            size.getAndIncrement();
+            c=size.getAndIncrement();
+            if(c+1<array.length){
+                //offer 当前唤醒后面等待的offer线程
+                tailWaits.signal();
+            }
+
+
+
             //通知,告诉他们可以用了 headWaits.signal();
         }finally {
             tailLock.unlock();
         }
+        if(c==0){
+            //当c==0,说明目前是从0到1的过程，需要唤醒非空的poll线程
+            headLock.lock();
+            try{
+                headWaits.signal();
+            }finally {
+                headLock.unlock();
+            }
+        }
+
     }
 
     /**
@@ -65,16 +83,24 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
                 tail = 0;
             }
             size.getAndIncrement();
-            //通知，你们不用再等了，ok了
-            headWaits.signal();
-            return true;
+
         }finally {
             tailLock.unlock();
         }
+        //通知，你们不用再等了，ok了
+        headLock.lock();
+        try{
+            headWaits.signal();
+        }finally {
+            headLock.unlock();
+        }
+        return true;
     }
 
     @Override
     public E poll() throws InterruptedException {
+        E e;
+        int c;//取走前的元素个数
         headLock.lockInterruptibly();
         try{
             //队列如果是空
@@ -82,18 +108,32 @@ public class BlockingQueue2<E> implements Blockingqueue<E> {
                 headWaits.await();
             }
             //2.非空则出队
-            E e = array[head];
+            e = array[head];
             array[head] = null;//help GC 垃圾回收
             if(++head == array.length){
                 head = 0;
             }
             //3. 修改size
-            size.getAndDecrement();
-            tailWaits.signal();
-            return e;
+            c=size.getAndDecrement();
+            if(c>1){
+                //有富裕的元素，唤醒其他poll进程
+                headWaits.signal();
+            }
+
         }finally {
             headLock.unlock();
         }
+        //当队列从满到不满，才会由poll唤醒等待不满的offer线程
+        if(c==array.length){
+            tailLock.lock();
+            try{
+                tailWaits.signal();
+            }finally {
+                tailLock.unlock();
+            }
+        }
+
+        return e;
     }
     public boolean isFull(){
         return size.get() == array.length;
